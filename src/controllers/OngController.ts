@@ -32,7 +32,22 @@ const listOng = [];
 
 class OngController {
   async index(request: Request, response: Response) {
-    return response.json( [...listOng] )
+    const { id } = request.query
+    if (id === undefined) {
+      return response.json( [...listOng] )
+    } else {
+      const ongFound = listOng.find((ong) => {
+        if (ong.id === id) {
+          return true;
+        }
+      })
+  
+      if (ongFound === undefined) {
+        return response.status(400).json({errorCode: "ONG not found"})
+      }
+
+      response.json( ongFound )
+    }
   }
 
   async create(request: Request, response: Response) {
