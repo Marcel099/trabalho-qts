@@ -1,25 +1,10 @@
 import { Request, Response } from 'express';
 
+import { connection } from '../database/connection'
 import { generateUniqueId } from '../utils/generateUniqueId';
 
-class Ong {
-  constructor(
-    id: string,
-    name: string,
-    email: string,
-    whatsapp: string,
-    city: string,
-    uf: string
-  ) {
-    this.id = id
-    this.name = name
-    this.email = email
-    this.whatsapp = whatsapp
-    this.city = city
-    this.uf = uf
-  }
-
-  id: string
+interface OngData {
+  id?: string
   name: string
   email: string
   whatsapp: string
@@ -27,26 +12,25 @@ class Ong {
   uf: string
 }
 
-const listOng = [];
-
-
 class OngController {
   async index(request: Request, response: Response) {
     const { id } = request.query
+    
     if (id === undefined) {
-      return response.json( [...listOng] )
+      const ongs = await connection<OngData>('ongs')
+        .select('*')
+        
+      return response.json( ongs )
     } else {
-      const ongFound = listOng.find((ong) => {
-        if (ong.id === id) {
-          return true;
-        }
-      })
+      const ongs = await connection<OngData>('ongs')
+        .select('*')
+        .where('id', String(id))
   
-      if (ongFound === undefined) {
+      if (ongs.length === 0) {
         return response.status(400).json({errorCode: "ONG not found"})
       }
 
-      response.json( ongFound )
+      response.json( ongs[0] )
     }
   }
 
@@ -54,16 +38,17 @@ class OngController {
     const { name, email, whatsapp, city, uf } = request.body
     const id = generateUniqueId()
 
-    const ong = new Ong(
+    const ong: OngData = {
       id,
       name,
       email,
       whatsapp,
       city,
       uf,
-    )
+    }
 
-    listOng.push(ong)
+    await connection<OngData>('ongs')
+      .insert(ong)
 
     return response.json({ id })
   }
@@ -72,21 +57,25 @@ class OngController {
     const { id } = request.query
     const { name, email, whatsapp, city, uf } = request.body
 
-    const ongFound = listOng.find((ong) => {
-      if (ong.id === id) {
-        return true;
-      }
-    })
+    const ongs = await connection<OngData>('ongs')
+      .select('*')
+      .where('id', String(id))
 
-    if (ongFound === undefined) {
+    if (ongs.length === 0) {
       return response.status(400).json({errorCode: "ONG not found"})
     }
 
-    ongFound.name = name
-    ongFound.email = email
-    ongFound.whatsapp = whatsapp
-    ongFound.city = city
-    ongFound.uf = uf
+    const ong: OngData = {
+      name,
+      email,
+      whatsapp,
+      city,
+      uf,
+    }
+
+    await connection<OngData>('ongs')
+      .where('id', String(id))
+      .update(ong)
 
     return response.status(204).send()
   }
@@ -94,17 +83,18 @@ class OngController {
   async delete(request: Request, response: Response) {
     const { id } = request.query
 
-    const ongIndex = listOng.findIndex((ong) => {
-      if (ong.id === id) {
-        return true;
-      }
-    })
+    const ongs = await connection<OngData>('ongs')
+      .select('*')
+      .where('id', String(id))
 
-    if (ongIndex === -1) {
+    if (ongs.length === 0) {
       return response.status(400).json({errorCode: "ONG not found"})
     }
 
-    listOng.splice(ongIndex, 1)
+    
+    await connection<OngData>('ongs')
+      .where('id', String(id))
+      .delete()
 
     return response.status(204).send()
   }
