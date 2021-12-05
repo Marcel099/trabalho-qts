@@ -1,16 +1,7 @@
-
 import request from 'supertest'
 
 import { app } from '../../src/app'
 
-type OngData = {
-  id: string
-  name: string
-  email: string
-  whatsapp: string
-  city: string
-  uf: string
-}
 let list_ong_id: string[] = []
 
 describe('ONG', () => {
@@ -183,5 +174,16 @@ describe('ONG', () => {
 
     expect(response.body).toHaveProperty('errorCode')
     expect(response.body.errorCode).toBe('ONG not found')
+  })
+
+  it(`should be able to delete all the ONGs created`, async () => {
+    list_ong_id.forEach(async ongId => {
+      const responseDelete = await request(app)
+      .delete('/ongs')
+      .query({id: ongId})
+      .expect(204)
+
+      expect(responseDelete.body).toStrictEqual({})
+    })
   })
 })
